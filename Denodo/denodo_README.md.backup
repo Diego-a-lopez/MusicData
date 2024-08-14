@@ -60,7 +60,7 @@ Para resolver este problema de análisis de datos, creamos 3 vistas derivadas:
 
 - fav_15: lista de artistas etiquetados 15 o más veces en 'favoritos' o 'favoritas' (no distingue mayúsculas y minúsculas) y que estan en musicbrainz.
 - top_100: lista de artistas que tienen un album en el top 100 y que estan en musicbrainz.
-- discografía: vista derivada que muestra el resultado final de la consulta combinando fav_15, top_100 con los datos de discografía de musicbrainz.
+- discografía: vista derivada que muestra el resultado final de la consulta.
 <p align="center"><img src="join.png" width="500" alt="join"></p>
 
 ### 3.2 Aplicar Cláusulas WHERE para Filtrar Datos

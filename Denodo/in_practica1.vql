@@ -1,0 +1,370 @@
+﻿# Generated with Denodo Platform 8.0 20230914.
+
+ENTER SINGLE USER MODE;
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+# 0 ====================================================================
+
+# #######################################
+# DATABASE
+# #######################################
+DROP DATABASE IF EXISTS mydb;
+
+CREATE DATABASE mydb '';
+
+CONNECT DATABASE mydb;
+
+# #######################################
+# FOLDERS
+# #######################################
+CREATE OR REPLACE FOLDER '/Base View' ;
+
+CREATE OR REPLACE FOLDER '/Data Source' ;
+
+CREATE OR REPLACE FOLDER '/Derived View' ;
+
+CREATE OR REPLACE FOLDER '/WebService' ;
+
+# #######################################
+# RESOURCES
+# #######################################
+# No vault resources
+# #######################################
+# LISTENERS JMS
+# #######################################
+# No listeners jms
+# #######################################
+# LISTENERS KAFKA
+# #######################################
+# No listeners kafka
+# #######################################
+# DATASOURCES
+# #######################################
+DROP DATASOURCE CUSTOM IF EXISTS top_3000_albums_101128 CASCADE;
+
+CREATE DATASOURCE CUSTOM top_3000_albums_101128
+    FOLDER = '/data source'
+    CLASSNAME='com.denodo.vdb.contrib.wrapper.xls.ExcelWrapper';
+
+DROP DATASOURCE DF IF EXISTS lastfmartisttags CASCADE;
+
+CREATE DATASOURCE DF lastfmartisttags
+    FOLDER = '/data source'
+    ROUTE LOCAL 'LocalConnection' 'C:/DataFiles/IN_MUSIC_DATA/LastFmArtistTags.dat'
+    COLUMNDELIMITER = ';'
+    ENDOFLINEDELIMITER = '\n'
+    HEADER = FALSE;
+
+DROP DATASOURCE JDBC IF EXISTS musicbrainz CASCADE;
+
+CREATE DATASOURCE JDBC musicbrainz
+    FOLDER = '/data source'
+    DRIVERCLASSNAME = 'com.mysql.cj.jdbc.Driver'
+    DATABASEURI = 'jdbc:mysql://localhost:3306/musicbrainz'
+    USERNAME = 'musicuser'
+    USERPASSWORD = 'YSWaitimxdCZNvfRiBg92FazglhqhaI7XejoriZbpFPPwlFN+ZrG3WIvBiiIhYMb/Fma8qBZDt/p9yUAGJEWdsQqhJWSApw7TpVHXdznJkwhkxEKSkV1Y4q49B6Tuvcz' ENCRYPTED
+    CLASSPATH = 'mysql-8'
+    DATABASENAME = 'mysql'
+    DATABASEVERSION = '8'
+    FETCHSIZE = 1000
+    VALIDATIONQUERY = 'Select 1'
+    INITIALSIZE = 4
+    MAXIDLE = -1
+    MINIDLE = 0
+    MAXACTIVE = 20
+    EXHAUSTEDACTION = 1
+    TESTONBORROW = true
+    TESTONRETURN = false
+    TESTWHILEIDLE = false
+    TIMEBETWEENEVICTION = -1
+    NUMTESTPEREVICTION = 3
+    MINEVICTABLETIME = 1800000
+    POOLPREPAREDSTATEMENTS = false
+    MAXOPENPREPAREDSTATEMENTS = -1
+    PROPERTIES ('allowLoadLocalInfile'='true')
+    DATA_LOAD_CONFIGURATION (
+        BATCHINSERTSIZE = 200
+        USEEXTERNALTABLES ( 
+            ONMOVEREAD = false,
+            ONMOVEWRITE = true
+        )
+    );
+
+# #######################################
+# DATABASE CONFIGURATION
+# #######################################
+ALTER DATABASE mydb
+  CHARSET DEFAULT;
+
+# #######################################
+# WRAPPERS
+# #######################################
+DROP WRAPPER CUSTOM IF EXISTS top_3000_albums_101128 CASCADE;
+
+CREATE WRAPPER CUSTOM top_3000_albums_101128
+    FOLDER = '/data source'
+    DATASOURCENAME=top_3000_albums_101128
+    PARAMETERS (
+      'Type of file' = 'Excel 2007 or later (*.xlsx)',
+      'File location' = ROUTE LOCAL 'LocalConnection' 'C:/DataFiles/IN_MUSIC_DATA/top_3000_albums_101128.xlsx',
+      'Extract data from all sheets' = false,
+      'Extract sheet name as a new column' = false,
+      'Has headers' = false,
+      'Stream tuples' = true
+    )
+    OUTPUTSCHEMA (
+        place = 'Column_0' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        artist = 'Column_1' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        album = 'Column_2' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        year = 'Column_3' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        place_2010_nov_28 = 'Column_4' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        place_2009_nov_08 = 'Column_5' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        place_2008_nov_30 = 'Column_6' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        change_2009_2010 = 'Column_7' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE,
+        change_2008_2010 = 'Column_8' : 'java.lang.String' (OPT) (sourcetypeid='12')  SORTABLE
+    );
+
+DROP WRAPPER DF IF EXISTS lastfmartisttags CASCADE;
+
+CREATE WRAPPER DF lastfmartisttags
+    FOLDER = '/base view'
+    DATASOURCENAME=lastfmartisttags
+    OUTPUTSCHEMA (
+        id = 'Column0' (OPT),
+        artist = 'Column1' (OPT),
+        tag = 'Column2' (OPT),
+        count = 'Column3' (OPT)
+    );
+
+DROP WRAPPER JDBC IF EXISTS musicbrainz_releases CASCADE;
+
+CREATE WRAPPER JDBC musicbrainz_releases
+    FOLDER = '/base view'
+    DATASOURCENAME=musicbrainz
+    CATALOGNAME='musicbrainz' 
+    RELATIONNAME='musicbrainz_releases' 
+    OUTPUTSCHEMA (
+        id = 'id' :'java.lang.Integer' (OPT) (sourcetyperadix='10', sourcetypesize='10', description='', sourcetypeid='4', sourcetypename='INT')  NOT NULL SORTABLE,
+        album = 'album' :'java.lang.String' (OPT) (sourcetyperadix='10', sourcetypesize='500', description='', sourcetypeid='12', sourcetypename='VARCHAR')  SORTABLE,
+        artist = 'artist' :'java.lang.String' (OPT) (sourcetyperadix='10', sourcetypesize='500', description='', sourcetypeid='12', sourcetypename='VARCHAR')  SORTABLE
+    );
+
+DROP WRAPPER JDBC IF EXISTS musicbrainz_tracks CASCADE;
+
+CREATE WRAPPER JDBC musicbrainz_tracks
+    FOLDER = '/base view'
+    DATASOURCENAME=musicbrainz
+    CATALOGNAME='musicbrainz' 
+    RELATIONNAME='musicbrainz_tracks' 
+    OUTPUTSCHEMA (
+        trackid = 'trackid' :'java.lang.Integer' (OPT) (sourcetyperadix='10', sourcetypesize='10', description='', sourcetypeid='4', sourcetypename='INT')  NOT NULL SORTABLE,
+        releaseid = 'releaseid' :'java.lang.Integer' (OPT) (sourcetyperadix='10', sourcetypesize='10', description='', sourcetypeid='4', sourcetypename='INT')  SORTABLE,
+        trackname = 'trackname' :'java.lang.String' (OPT) (sourcetyperadix='10', sourcetypesize='300', description='', sourcetypeid='12', sourcetypename='VARCHAR')  SORTABLE,
+        position = 'position' :'java.lang.Integer' (OPT) (sourcetyperadix='10', sourcetypesize='10', description='', sourcetypeid='4', sourcetypename='INT')  ESCAPE SORTABLE
+    );
+
+# #######################################
+# STORED PROCEDURES
+# #######################################
+# No stored procedures
+# #######################################
+# TYPES
+# #######################################
+# No types
+# #######################################
+# MAPS
+# #######################################
+# No maps
+# #######################################
+# BASE VIEWS
+# #######################################
+DROP VIEW IF EXISTS lastfmartisttags CASCADE;
+
+CREATE TABLE lastfmartisttags I18N gb (
+        id:text,
+        artist:text,
+        tag:text,
+        count:int
+    )
+    FOLDER = '/base view'
+    PRIMARY KEY ( 'id' )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD lastfmartisttags(
+        I18N gb
+        CONSTRAINTS (
+             ADD id (any) OPT ANY
+             ADD artist (any) OPT ANY
+             ADD tag (any) OPT ANY
+             ADD count (any) OPT ANY
+        )
+        OUTPUTLIST (artist, count, id, tag
+        )
+        WRAPPER (df lastfmartisttags)
+    );
+
+DROP VIEW IF EXISTS musicbrainz_releases CASCADE;
+
+CREATE TABLE musicbrainz_releases I18N gb (
+        id:int (notnull, sourcetypeid = '4', sourcetyperadix = '10', sourcetypesize = '10', description = ''),
+        album:text (sourcetypeid = '12', sourcetyperadix = '10', sourcetypesize = '500', description = ''),
+        artist:text (sourcetypeid = '12', sourcetyperadix = '10', sourcetypesize = '500', description = '')
+    )
+    FOLDER = '/base view'
+    PRIMARY KEY ( 'id' )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD musicbrainz_releases(
+        I18N gb
+        CONSTRAINTS (
+             ADD id (any) OPT ANY
+             ADD album (any) OPT ANY
+             ADD artist (any) OPT ANY
+        )
+        OUTPUTLIST (album, artist, id
+        )
+        WRAPPER (jdbc musicbrainz_releases)
+    );
+
+DROP VIEW IF EXISTS musicbrainz_tracks CASCADE;
+
+CREATE TABLE musicbrainz_tracks I18N gb (
+        trackid:int (notnull, sourcetypeid = '4', sourcetyperadix = '10', sourcetypesize = '10', description = ''),
+        releaseid:int (sourcetypeid = '4', sourcetyperadix = '10', sourcetypesize = '10', description = ''),
+        trackname:text (sourcetypeid = '12', sourcetyperadix = '10', sourcetypesize = '300', description = ''),
+        position:int (sourcetypeid = '4', sourcetyperadix = '10', sourcetypesize = '10', description = '')
+    )
+    FOLDER = '/base view'
+    PRIMARY KEY ( 'trackid' )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD musicbrainz_tracks(
+        I18N gb
+        CONSTRAINTS (
+             ADD trackid (any) OPT ANY
+             ADD releaseid (any) OPT ANY
+             ADD trackname (any) OPT ANY
+             ADD position (any) OPT ANY
+        )
+        OUTPUTLIST (position, releaseid, trackid, trackname
+        )
+        WRAPPER (jdbc musicbrainz_tracks)
+    );
+
+DROP VIEW IF EXISTS top_3000_albums_101128 CASCADE;
+
+CREATE TABLE top_3000_albums_101128 I18N gb (
+        place:int (sourcetypeid = '4'),
+        artist:text (sourcetypeid = '12'),
+        album:text (sourcetypeid = '12'),
+        year:int (sourcetypeid = '4'),
+        place_2010_nov_28:int (sourcetypeid = '4'),
+        place_2009_nov_08:int (sourcetypeid = '4'),
+        place_2008_nov_30:int (sourcetypeid = '4'),
+        change_2009_2010:int (sourcetypeid = '4'),
+        change_2008_2010:int (sourcetypeid = '4')
+    )
+    FOLDER = '/base view'
+    PRIMARY KEY ( 'artist' , 'album' , 'year' )
+    CACHE OFF
+    TIMETOLIVEINCACHE DEFAULT
+    ADD SEARCHMETHOD top_3000_albums_101128(
+        I18N gb
+        CONSTRAINTS (
+             ADD place (any) OPT ANY
+             ADD artist (any) OPT ANY
+             ADD album (any) OPT ANY
+             ADD year (any) OPT ANY
+             ADD place_2010_nov_28 (any) OPT ANY
+             ADD place_2009_nov_08 (any) OPT ANY
+             ADD place_2008_nov_30 (any) OPT ANY
+             ADD change_2009_2010 (any) OPT ANY
+             ADD change_2008_2010 (any) OPT ANY
+        )
+        OUTPUTLIST (album, artist, change_2008_2010, change_2009_2010, place, place_2008_nov_30, place_2009_nov_08, place_2010_nov_28, year
+        )
+        WRAPPER (custom top_3000_albums_101128)
+    );
+
+# #######################################
+# VIEWS
+# #######################################
+DROP VIEW IF EXISTS fav_15 CASCADE;
+
+CREATE VIEW fav_15 FOLDER = '/derived view' AS SELECT musicbrainz_releases.artist AS artist FROM musicbrainz_releases AS musicbrainz_releases INNER JOIN lastfmartisttags AS lastfmartisttags ON musicbrainz_releases.artist = lastfmartisttags.artist  GROUP BY musicbrainz_releases.artist HAVING sum(case WHEN (lastfmartisttags.tag in ('favourite', 'favourites', 'Favourites', 'Favourite')) THEN lastfmartisttags.count ELSE 0 END) > 14;
+
+ALTER VIEW fav_15
+ LAYOUT (musicbrainz_releases = [20, 30, 200, 85], lastfmartisttags = [280, 30, 200, 105]);
+
+DROP VIEW IF EXISTS top_100 CASCADE;
+
+CREATE VIEW top_100 FOLDER = '/derived view' AS SELECT top_3000_albums_101128.artist AS artist FROM musicbrainz_releases AS musicbrainz_releases INNER JOIN top_3000_albums_101128 AS top_3000_albums_101128 ON (musicbrainz_releases.album = top_3000_albums_101128.album AND musicbrainz_releases.artist = top_3000_albums_101128.artist)  WHERE top_3000_albums_101128.place <= 100 GROUP BY top_3000_albums_101128.artist;
+
+ALTER VIEW top_100
+ LAYOUT (musicbrainz_releases = [30, 10, 200, 85], top_3000_albums_101128 = [290, 10, 200, 205]);
+
+DROP VIEW IF EXISTS discography CASCADE;
+
+CREATE VIEW discography FOLDER = '/derived view' AS SELECT musicbrainz_releases.artist AS artist, musicbrainz_releases.album AS album, musicbrainz_tracks.trackname AS trackname FROM fav_15 AS fav_15 INNER JOIN ((top_100 AS top_100 INNER JOIN musicbrainz_releases AS musicbrainz_releases ON top_100.artist = musicbrainz_releases.artist ) INNER JOIN musicbrainz_tracks AS musicbrainz_tracks ON musicbrainz_releases.id = musicbrainz_tracks.releaseid ) ON fav_15.artist = top_100.artist ;
+
+ALTER VIEW discography
+ LAYOUT (fav_15 = [20, 130, 200, 45], top_100 = [300, 130, 200, 45], musicbrainz_releases = [550, 90, 200, 85], musicbrainz_tracks = [790, 70, 200, 105]);
+
+# #######################################
+# ASSOCIATIONS
+# #######################################
+# No associations
+# #######################################
+# WEBSERVICES
+# #######################################
+DROP REST WEBSERVICE IF EXISTS discography;
+
+CREATE REST WEBSERVICE discography
+    CONNECTION (
+        CHUNKSIZE = 1000
+        CHUNKTIMEOUT = 90000
+        QUERYTIMEOUT = 900000
+        POOLENABLED = true
+        POOLINITSIZE = 0
+        POOLMAXACTIVE = 30
+    )
+    DEFAULTREPRESENTATION = HTML
+    SUPPORTEDREPRESENTATIONS (HTML, XML, JSON)
+    RESOURCES (
+        VIEW discography FIELDS (
+            trackname : 'text', 
+            album : 'text', 
+            artist : 'text'
+        )
+    )
+    OPTIONS ( NULLVALUESASEMPTYXMLELEMENTS = false
+        PROCESS_FUNCTIONS_IN_SELECT_PARAMETER = true ) 
+    OPENAPI2 ( API_VERSION = '1.0.0' ) 
+    FOLDER = '/webservice';
+
+# #######################################
+# WIDGETS
+# #######################################
+# No widgets
+# #######################################
+# WEBCONTAINER WEB SERVICE DEPLOYMENTS
+# #######################################
+UNDEPLOY IF EXISTS WEBSERVICE discography;
+
+DEPLOY WEBSERVICE discography LOGIN = 'admin' PASSWORD = 'mjrfqv6YOHUOyqrXESBTw44Cr1uc4l/A8bJMJmxvxdURk+g41xX0kpyFgjH9z5UX0ANp55l5REi2ndVn1vhwligkcjfINmyt8E5GcvDHEXwMMcSCbEFcKME2L/Qq4gUN' ENCRYPTED;
+
+# #######################################
+# WEBCONTAINER WIDGET DEPLOYMENTS
+# #######################################
+# No deployed widgets
+# #######################################
+# Closing connection with database mydb
+# #######################################
+CLOSE;
+
+
+
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+EXIT SINGLE USER MODE;
